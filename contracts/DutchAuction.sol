@@ -1,10 +1,11 @@
-import "./LibSubmarineSimple";
-import "./CypherpunkCoin";
+pragma solidity ^0.4.24;
+import "./LibSubmarineSimple.sol";
+import "./CypherpunkCoin.sol";
 
 contract DutchAuction is LibSubmarineSimple {
     uint256 public endAuctionTxBlockNumber;
     uint256 public endAuctionTxIndex;
-    bool public canClaim;
+    bool public canfinalize;
     uint256 public constant startCommitBlock;
     uint256 public constant endCommitBlock;
     CypherpunkCoin public token;
@@ -13,6 +14,7 @@ contract DutchAuction is LibSubmarineSimple {
     uint256 public ethRefundLastBidder;
     address public lastBidder;
 
+    // start the auction with specified commitment period, owner and token
     constructor(
         Cypherpunk _token,
         address _owner,
@@ -27,7 +29,7 @@ contract DutchAuction is LibSubmarineSimple {
 
     // owner based on the events Revealed and Unlocked emitted by the contract
     // to set these attributes
-    function setEndingBlockTransaction(
+    function prepareFinalize(
         uint256 _endAuctionTxBlockNumber,
         uint256 _endAuctionTxIndex,
         uint256 _clearingPrice,
@@ -35,19 +37,20 @@ contract DutchAuction is LibSubmarineSimple {
         address _lastBidder
     ) public {
         require(msg.sender == owner);
+        // set the transaction that ends the auction
         endAuctionTxBlockNumber = _endAuctionTxBlockNumber;
         endAuctionTxIndex = _endAuctionTxIndex;
         clearingPrice = _clearingPrice;
         lastBidder = _lastBidder;
         ethRefundLastBidder = _ethRefundLastBidder;
-        canClaim = true;
+        canfinalize = true;
     }
 
     // a bidder call this function to take their tokens if their commitment are valid to do so
     // or get their ETH back
     function finalize(bytes32 _submarineId) {
         require(
-            canclaim,
+            canfinalize,
             "Have to wait for the owner to set the ending block transaction"
         );
         require(
@@ -80,7 +83,7 @@ contract DutchAuction is LibSubmarineSimple {
         } else bidders[_submarineId].transfer(ss.amountUnlocked);
     }
 
-    // function executed after revealing
+    // function executed on every revealing
     function onSubmarineReveal(
         bytes32 _submarineId,
         bytes _embeddedDAppData,
