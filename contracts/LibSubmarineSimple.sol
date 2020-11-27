@@ -299,7 +299,8 @@ contract LibSubmarineSimple is ProvethVerifier {
         onSubmarineReveal(
             submarineId,
             _embeddedDAppData,
-            unsignedUnlockTx.value
+            unsignedUnlockTx.value,
+            _commitTxBlockNumber
         );
     }
 

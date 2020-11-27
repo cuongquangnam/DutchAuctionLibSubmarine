@@ -9,6 +9,9 @@ contract DutchAuction is LibSubmarineSimple {
     uint256 public constant endCommitBlock;
     CypherpunkCoin public token;
     address public owner;
+    uint256 public clearingPrice;
+    uint256 public ethRefundLastBidder;
+    address public lastBidder;
 
     constructor(
         Cypherpunk _token,
@@ -22,7 +25,7 @@ contract DutchAuction is LibSubmarineSimple {
         endCommitBlock = _endCommitBlock;
     }
 
-    // owner based on the events Revealed and Unlocked of the contract
+    // owner based on the events Revealed and Unlocked emitted by the contract
     // to set these attributes
     function setEndingBlockTransaction(
         uint256 _endAuctionTxBlockNumber,
@@ -40,6 +43,8 @@ contract DutchAuction is LibSubmarineSimple {
         canClaim = true;
     }
 
+    // a bidder call this function to take their tokens if their commitment are valid to do so
+    // or get their ETH back
     function finalize(bytes32 _submarineId) {
         require(
             canclaim,
@@ -51,12 +56,14 @@ contract DutchAuction is LibSubmarineSimple {
         );
         SubmarineSession ss = sessions[_submarineId];
 
+        // check whether the commit transaction is in the specified window
         if (
             ss.commitTxBlockNumber >= startCommitBlock &&
             (ss.commitTxBlockNumber < endAuctionTxBlockNumber ||
                 (ss.commitTxBlockNumber == endAuctionTxBlockNumber &&
                     ss.commitTxIndex <= endAuctionTxIndex))
         ) {
+            // check whether the bidder is the last bidder
             if (
                 bidders[_submarineId] == lastBidder && ethRefundLastBidder != 0
             ) {
@@ -73,11 +80,14 @@ contract DutchAuction is LibSubmarineSimple {
         } else bidders[_submarineId].transfer(ss.amountUnlocked);
     }
 
+    // function executed after revealing
     function onSubmarineReveal(
         bytes32 _submarineId,
         bytes _embeddedDAppData,
-        uint256 _value
+        uint256 _value,
+        uint32 _commitTxBlockNumber
     ) {
+        // require the commit to be in the specified period
         require(
             _commitTxBlockNumber >= startCommitBlock &&
                 _commitTxBlockNumber <= endCommitBlock,
