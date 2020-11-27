@@ -35,7 +35,12 @@ contract CypherpunkCoin is AccessControl, ERC20Burnable {
             hasRole(AUCTION_CREATOR_ROLE, msg.sender),
             "CypherpunkCoin: must have auction creator role to create an auction"
         );
-        DutchAuction auction = new DutchAuction(this, _owner);
+        DutchAuction auction = new DutchAuction(
+            this,
+            _owner,
+            _startCommitBlock,
+            _endCommitBlock
+        );
         transfer(address(auction), _supply);
         auctionAddress = address(auction);
     }
