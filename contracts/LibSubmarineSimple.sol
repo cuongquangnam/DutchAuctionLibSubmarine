@@ -5,17 +5,13 @@ import "./proveth/ProvethVerifier.sol";
 import "./proveth/RLP.sol";
 
 contract LibSubmarineSimple is ProvethVerifier {
-
     using SafeMath for uint256;
 
     ////////////
     // Events //
     ////////////
 
-    event Unlocked(
-        bytes32 indexed _submarineId,
-        uint96 _commitValue
-    );
+    event Unlocked(bytes32 indexed _submarineId, uint96 _commitValue);
     event Revealed(
         bytes32 indexed _submarineId,
         uint96 _commitValue,
@@ -91,15 +87,18 @@ contract LibSubmarineSimple is ProvethVerifier {
         uint256 _gasPrice,
         uint256 _gasLimit
     ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            _user,
-            _libsubmarine,
-            _commitValue,
-            _embeddedDAppData,
-            _witness,
-            _gasPrice,
-            _gasLimit
-        ));
+        return
+            keccak256(
+                abi.encodePacked(
+                    _user,
+                    _libsubmarine,
+                    _commitValue,
+                    _embeddedDAppData,
+                    _witness,
+                    _gasPrice,
+                    _gasLimit
+                )
+            );
     }
 
     /**
@@ -110,12 +109,16 @@ contract LibSubmarineSimple is ProvethVerifier {
      *         commit TX.
      * @return commitTxIndex the index in the block where the commit tx is.
      */
-    function getSubmarineState(bytes32 _submarineId) public view returns (
-        uint96 amountRevealed,
-        uint96 amountUnlocked,
-        uint32 commitTxBlockNumber,
-        uint16 commitTxIndex
-    ) {
+    function getSubmarineState(bytes32 _submarineId)
+        public
+        view
+        returns (
+            uint96 amountRevealed,
+            uint96 amountUnlocked,
+            uint32 commitTxBlockNumber,
+            uint16 commitTxIndex
+        )
+    {
         SubmarineSession memory sesh = sessions[_submarineId];
         return (
             sesh.amountRevealed,
@@ -125,13 +128,15 @@ contract LibSubmarineSimple is ProvethVerifier {
         );
     }
 
-   /**
+    /**
      * @notice Singleton session getter - amount of money sent in submarine send
      * @return amountRevealed amount promised by user to be unlocked in reveal
      */
-    function getSubmarineAmount(bytes32 _submarineId) public view returns (
-        uint96 amount
-    ) {
+    function getSubmarineAmount(bytes32 _submarineId)
+        public
+        view
+        returns (uint96 amount)
+    {
         SubmarineSession memory sesh = sessions[_submarineId];
         return sesh.amountRevealed;
     }
@@ -142,7 +147,9 @@ contract LibSubmarineSimple is ProvethVerifier {
      *         commit TX.
      */
     function getSubmarineCommitBlockNumber(bytes32 _submarineId)
-        public view returns (uint32 commitTxBlockNumber)
+        public
+        view
+        returns (uint32 commitTxBlockNumber)
     {
         SubmarineSession memory sesh = sessions[_submarineId];
         return sesh.commitTxBlockNumber;
@@ -153,7 +160,9 @@ contract LibSubmarineSimple is ProvethVerifier {
      * @return commitTxIndex the index in the block where the commit tx is.
      */
     function getSubmarineCommitTxIndex(bytes32 _submarineId)
-        public view returns(uint16 commitTxIndex)
+        public
+        view
+        returns (uint16 commitTxIndex)
     {
         SubmarineSession memory sesh = sessions[_submarineId];
         return sesh.commitTxIndex;
@@ -207,12 +216,15 @@ contract LibSubmarineSimple is ProvethVerifier {
             commitBlockHash != 0x0,
             "Commit Block is too old to retreive block hash or does not exist"
         );
+        // check whether commit number is within the time window specified
         require(
             block.number.sub(_commitTxBlockNumber) > commitPeriodLength,
-            "Wait for commitPeriodLength blocks before revealing");
+            "Wait for commitPeriodLength blocks before revealing"
+        );
 
-        UnsignedTransaction memory unsignedUnlockTx =
-            decodeUnsignedTx(_rlpUnlockTxUnsigned);
+        UnsignedTransaction memory unsignedUnlockTx = decodeUnsignedTx(
+            _rlpUnlockTxUnsigned
+        );
         bytes32 unsignedUnlockTxHash = keccak256(_rlpUnlockTxUnsigned);
 
         require(unsignedUnlockTx.nonce == 0);
@@ -241,14 +253,19 @@ contract LibSubmarineSimple is ProvethVerifier {
             provenCommitTxResultValid,
             provenCommitTxIndex,
             provenCommitTx.nonce,
-            /* gasprice */,
-            /* startgas */,
+            ,
+            ,
+            /* gasprice */
+            /* startgas */
             provenCommitTx.to,
             provenCommitTx.value,
             provenCommitTx.data,
-            /* v */ ,
-            /* r */,
-            /* s */,
+            ,
+            ,
+            ,
+            /* v */
+            /* r */
+            /* s */
             provenCommitTx.isContractCreation
         ) = txProof(commitBlockHash, _proofBlob);
 
@@ -263,8 +280,8 @@ contract LibSubmarineSimple is ProvethVerifier {
         address submarine = ecrecover(
             unsignedUnlockTxHash,
             vee,
-            keccak256(abi.encodePacked(submarineId, byte(1))),
-            keccak256(abi.encodePacked(submarineId, byte(0)))
+            keccak256(abi.encodePacked(submarineId, bytes1(1))),
+            keccak256(abi.encodePacked(submarineId, bytes1(0)))
         );
 
         require(provenCommitTx.to == submarine);
@@ -296,6 +313,8 @@ contract LibSubmarineSimple is ProvethVerifier {
     function unlock(bytes32 _submarineId) public payable {
         // Required to prevent an attack where someone would unlock after an
         // unlock had already happened, and try to overwrite the unlock amount.
+
+        // Can unlock at anytime, because I am receiving free money, haha.
         require(
             sessions[_submarineId].amountUnlocked < msg.value,
             "You can never unlock less money than you've already unlocked."
@@ -314,12 +333,15 @@ contract LibSubmarineSimple is ProvethVerifier {
      *         completed for it (0 for failure / not yet finished, 1 for
      *         successful submarine TX)
      */
-    function revealedAndUnlocked(
-        bytes32 _submarineId
-    ) public view returns(bool success) {
+    function revealedAndUnlocked(bytes32 _submarineId)
+        public
+        view
+        returns (bool success)
+    {
         SubmarineSession memory sesh = sessions[_submarineId];
-        return sesh.amountUnlocked != 0
-            && sesh.amountRevealed != 0
-            && sesh.amountUnlocked >= sesh.amountRevealed;
+        return
+            sesh.amountUnlocked != 0 &&
+            sesh.amountRevealed != 0 &&
+            sesh.amountUnlocked >= sesh.amountRevealed;
     }
 }
